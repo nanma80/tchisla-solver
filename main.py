@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-import re, json
+import re, json, time, datetime
+
 from urllib import request
+from urllib import parse
 from argparse import ArgumentParser
 from gmpy2 import mpq as Fraction
 from config import global_config
@@ -30,6 +32,38 @@ solvers = {
     }
 }
 
+def submit(target, digits, digits_count, solution):
+    print("Submitting {}#{}: {}   {}".format(target, digits, digits_count, solution))
+    data = {
+        "records_timestamp" : str(int(time.time()) * 1000),
+        "app" : "Numbers",
+        "app_version" : "1.17",
+        "app_family" : 0,
+        "results" : [
+          {
+            "solution" : solution,
+            "digits_count" : digits_count,
+            "digits" : digits,
+            "target" : target,
+            "date" : datetime.datetime.utcnow().isoformat() + "+00:00"
+          }
+        ],
+        "os_version" : "9.3.4",
+        "lang" : "zh",
+        "orientation" : 1,
+        "device" : "iPad2,1"
+    }
+
+    submit_url = 'http://www.euclidea.xyz/api/v1/game/numbers/solutions'
+    req = request.Request(submit_url)
+    req.add_header('Content-Type', 'application/json; charset=utf-8')
+    json_payload = json.dumps(data)
+    jsondata = json_payload.encode('utf-8')
+    req.add_header('Content-Length', len(jsondata))
+    r = request.urlopen(req, jsondata)
+    content = json.loads(r.read().decode('utf-8'))
+    print(content)
+
 def general_solver(n, target, options):
     max_depth = options.max_depth
     depth = max_depth and max_depth + 1
@@ -55,7 +89,12 @@ def general_solver(n, target, options):
         solution = tchisla.solution_prettyprint(current_target, force_print=True)
         for string in solution:
             print(string)
-        print(current_target, "=", tchisla.full_expression(tchisla.target), flush = True)
+        full_expression = str(tchisla.full_expression(tchisla.target))
+        print(current_target, "=", full_expression, flush = True)
+        digits_count = tchisla.solutions[current_target][0]
+        if options.submit:
+            submit(int(current_target), n, digits_count, full_expression)
+
         if global_config["verbose"]:
             print('\007', end='', flush = True)
     if depth and options.check_wr:
@@ -154,6 +193,11 @@ def main():
         action='store_true',
         default=False,
         help='switch mode to try to find a solution shorter than the current WR',
+    )
+    parser.add_argument('-u', '--submit',
+        action='store_true',
+        default=False,
+        help='Submit the solution to the Tchisla server',
     )
     parser.add_argument('-v', '--verbose',
         action='store_true',

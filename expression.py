@@ -90,7 +90,7 @@ class Expression:
                     sqrt_depth += 1
                     arg = arg.args[0]
                 string = Expression.str(arg, spaces = spaces)
-                return "s" * sqrt_depth + "qrt(" + string + ")"
+                return "\u221a" * sqrt_depth + "(" + string + ")"
             else:
                 comparator = operator.lt if expression_operator["abelian"] else operator.le
                 if comparator(
