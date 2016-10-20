@@ -35,8 +35,8 @@ solvers = {
 def submit(target, digits, digits_count, solution):
     print("Submitting {}#{}: {}   {}".format(target, digits, digits_count, solution))
     result_path = "results/results.txt"
-    with open(result_path, 'a') as f:
-        f.write("{} {} {} {}\n".format(target, digits, digits_count, solution))
+    with open(result_path, encoding='utf-8', mode='a') as f:
+        f.write("{},{},{},{}\n".format(target, digits, digits_count, solution))
 
     data = {
         "records_timestamp" : str(int(time.time()) * 1000),
