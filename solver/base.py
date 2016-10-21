@@ -1,9 +1,9 @@
-import math
+import math, sys, copy
 import operator
 from itertools import count, product, combinations_with_replacement, chain
 from functools import reduce
 from abc import ABCMeta, abstractmethod
-from config import global_config
+from config import global_config, specials, limits
 from gmpy2 import mpq as Fraction, fac as factorial
 from expression import Expression
 
@@ -13,23 +13,59 @@ class SolutionFoundError(Exception):
     def __init__(self, message):
         self.message = message
 
-class BaseTchisla:
-    __metaclass__ = ABCMeta
-    __slots__ = ("n", "target", "solutions", "max_depth", "visited", "number_printed")
+class BaseTchisla(metaclass=ABCMeta):
+    instances = {}
+    last_digit = 0
+    __slots__ = ("n", "target", "solutions", "max_depth", "visited", "number_printed", "specials", "limits", "depth_started", "depth_finished", "start_state")
 
-    def __init__(self, n, target):
+    def __new__(cls, n):
+        class_name = cls.name()
+        if class_name not in cls.instances:
+            cls.instances[class_name] = {}
+        if n not in cls.instances[class_name]:
+            instance = super(BaseTchisla, cls).__new__(cls)
+            instance.solutions = {}
+            instance.visited = [None, []]
+            instance.depth_started = 0
+            instance.depth_finished = 0
+            instance.start_state = []
+            cls.instances[class_name][n] = instance
+        if cls.last_digit != 0 and cls.last_digit != n:
+            for x in cls.instances:
+                if cls.last_digit in cls.instances[x]:
+                    del cls.instances[x][cls.last_digit]
+        cls.last_digit = n
+
+        return cls.instances[class_name][n]
+
+    def __init__(self, n):
         self.n = n
-        self.target = self.constructor(target)
-        self.solutions = {}
+        self.target = None
         self.max_depth = None
-        self.visited = [None, []]
         self.number_printed = set()
+
+        self.specials = {}
+        if n in specials[self.name()]:
+            self.specials = specials[self.name()][n]
+
+        self.limits = copy.deepcopy(limits[self.name()]["default"])
+        if n in limits[self.name()]:
+            self.limits.update(limits[self.name()][n])
+        self.MAX = self.limits["max"]
+        self.MAX_DIGITS = self.limits["max_digits"]
+        self.MAX_CONCAT = self.limits["max_concat"]
+        self.MAX_FACTORIAL = self.limits["max_factorial"]
 
     def insert(self, x, digits, expression):
         self.solutions[x] = digits, expression
         self.visited[digits].append(x)
         if x == self.target:
             raise SolutionFoundError((x, digits))
+
+    @staticmethod
+    @abstractmethod
+    def name():
+        pass
 
     @abstractmethod
     def range_check(self, x):
@@ -143,25 +179,53 @@ class BaseTchisla:
             yield from combinations_with_replacement(self.visited[digits >> 1], 2)
 
     def search(self, digits):
-        if digits not in self.visited:
+        # if already found, raise it
+        if self.target in self.solutions:
+            solution = self.solutions[self.target]
+            raise SolutionFoundError((self.target, solution[0]))
+
+        # no need to search finished depth
+        if digits <= self.depth_finished:
+            return
+
+        # needs digits + 1 for factorial_divide
+        while len(self.visited) <= digits + 1:
             self.visited.append([])
+
+        # restart search for the unfinished depth
+        # we need to keep results provided by factorial_divide of last depth
+        if self.depth_started < digits:
+            self.start_state = copy.copy(self.visited[digits])
+            self.depth_started = digits
+        for x in self.visited[digits]:
+            if x not in self.start_state:
+                del self.solutions[x]
+        self.visited[digits] = copy.copy(self.start_state)
+        if digits in self.specials:
+            for (x, expression) in self.specials[digits]:
+                self.insert(x, digits, expression)
+
         self.concat(digits)
         for p, q in self.binary_generator(digits):
             self.binary_operation(p, q, digits)
         for p, q in self.binary_generator(digits):
             self.factorial_divide(p, q, digits)
+        self.depth_finished = digits
 
-    def solve(self, *, max_depth = None):
+    def solve(self, target, *, max_depth = None):
+        self.target = self.constructor(target)
         self.max_depth = max_depth
         for digits in count(1):
             if digits - 1 == max_depth:
                 return
             if global_config["verbose"]:
-                print(digits)
+                print(digits, file=sys.stderr, flush = True)
             try:
                 self.search(digits)
             except SolutionFoundError as solution:
-                return solution.message[1]
+                if max_depth is None or solution.message[1] <= max_depth:
+                    return solution.message[1]
+                return
 
     def printer(self, n):
         digits, expression = self.solutions[n]

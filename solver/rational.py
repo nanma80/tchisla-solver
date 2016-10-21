@@ -7,13 +7,13 @@ __all__ = ["RationalTchisla"]
 
 class RationalTchisla(BaseTchisla):
     constructor = Fraction
-    MAX = 1 << 32
-    MAX_DIGITS = 32
-    MAX_CONCAT = 20
-    MAX_FACTORIAL = 12
 
-    def __init__(self, n, target):
-        super().__init__(n, target)
+    def __init__(self, n):
+        super().__init__(n)
+
+    @staticmethod
+    def name():
+        return "rational"
 
     def range_check(self, x):
         return x.numerator <= self.MAX and x.denominator <= self.MAX
