@@ -43,7 +43,7 @@ operators = {
         "type": "unary",
         "precedence": 5,
         "abelian": True,
-        "string": lambda s: s + "!"
+        "string": lambda s: "(" + s + ")!"
     },
     "sqrt": {
         "type": "unary",
