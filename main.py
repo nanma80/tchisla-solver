@@ -65,9 +65,12 @@ def submit(target, digits, digits_count, solution):
     json_payload = json.dumps(data)
     jsondata = json_payload.encode('utf-8')
     req.add_header('Content-Length', len(jsondata))
-    r = request.urlopen(req, jsondata)
-    content = json.loads(r.read().decode('utf-8'))
-    print(content)
+    try:
+        r = request.urlopen(req, jsondata)
+        content = json.loads(r.read().decode('utf-8'))
+        print(content)
+    except Exception as e:
+        print(e)
 
 def general_solver(n, target, options):
     max_depth = options.max_depth
