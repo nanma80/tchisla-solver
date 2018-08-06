@@ -11,6 +11,7 @@ class QuadraticTchisla(BaseTchisla):
 
     def __init__(self, n):
         super().__init__(n)
+        print(self.limits)
         self.MAX_QUADRATIC_POWER = self.limits["max_quadratic_power"]
 
     @staticmethod
