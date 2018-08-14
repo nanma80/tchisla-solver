@@ -26,11 +26,11 @@ limits = {
 	},
 	"quadratic": {
 		"default": {
-			"max": 1 << 24,
-			"max_digits": 24,
+			"max": 1 << 16,
+			"max_digits": 16,
 			"max_concat": 5,
-			"max_factorial": 10,
-			"max_quadratic_power": 3,
+			"max_factorial": 8,
+			"max_quadratic_power": 1,
 		}
 	}
 }
@@ -60,8 +60,8 @@ specials = {
 			]
 		},
 		5: {
-			3: [
-				(Quadratic(22869362880), Expression.divide(Expression.factorial(120), Expression.factorial(115)))
+			4: [
+				(Quadratic.sqrt(Quadratic(22869362880+120)), Expression.sqrt(Expression.add(Expression.divide(Expression.factorial(120), Expression.factorial(115)), Expression.factorial(5))))
 			]
 		}
 	}
